@@ -3,15 +3,11 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'flask-app'
+        CONTAINER_NAME = 'flask-app-container'
+        PORT = '5000'
     }
 
     stages {
-        stage('Clone Repo') {
-            steps {
-                git 'https://github.com/swetabh65/JenkinsDryRunWithFlask.git'
-            }
-        }
-
         stage('Docker Build') {
             steps {
                 script {
@@ -23,9 +19,8 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Stop & remove if already running (to avoid duplicate errors)
-                    sh 'docker rm -f flask-app-container || true'
-                    sh "docker run -d -p 5000:5000 --name flask-app-container ${DOCKER_IMAGE}"
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                    sh "docker run -d -p ${PORT}:${PORT} --name ${CONTAINER_NAME} ${DOCKER_IMAGE}"
                 }
             }
         }
