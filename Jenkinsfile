@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'flask-app'
+        DOCKER_TAG = 'latest'
+        DOCKER_USERNAME = 'yourdockerhubusername'   // <-- Replace with your Docker Hub username
         CONTAINER_NAME = 'flask-app-container'
         PORT = '5000'
     }
@@ -11,7 +13,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    docker.build(DOCKER_IMAGE)
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
                 }
             }
         }
@@ -39,7 +41,7 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    sh "docker run -d -p ${PORT}:${PORT} --name ${CONTAINER_NAME} ${DOCKER_IMAGE}"
+                    sh "docker run -d -p ${PORT}:${PORT} --name ${CONTAINER_NAME} ${DOCKER_IMAGE}:${DOCKER_TAG}"
                 }
             }
         }
@@ -49,6 +51,21 @@ pipeline {
                 script {
                     sh 'sleep 5'
                     sh 'curl http://localhost:5000 || echo "Flask app not responding"'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh '''
+                        echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} $USERNAME/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push $USERNAME/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker logout
+                        '''
+                    }
                 }
             }
         }
