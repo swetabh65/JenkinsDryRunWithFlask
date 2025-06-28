@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'flask-app'
+    }
+
     stages {
         stage('Clone Repo') {
             steps {
@@ -8,15 +12,21 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build') {
             steps {
-                sh 'docker build -t flask-app .'
+                script {
+                    docker.build(DOCKER_IMAGE)
+                }
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                sh 'docker run -d -p 5000:5000 --name flask-app-container flask-app || true'
+                script {
+                    // Stop & remove if already running (to avoid duplicate errors)
+                    sh 'docker rm -f flask-app-container || true'
+                    sh "docker run -d -p 5000:5000 --name flask-app-container ${DOCKER_IMAGE}"
+                }
             }
         }
     }
