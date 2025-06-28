@@ -16,10 +16,24 @@ pipeline {
             }
         }
 
+        stage('Cleanup Port/Container') {
+            steps {
+                script {
+                    // Stop and remove existing container using the same port (if any)
+                    sh '''
+                    existing_container=$(docker ps -q --filter "publish=${PORT}")
+                    if [ ! -z "$existing_container" ]; then
+                        echo "Stopping container using port ${PORT}..."
+                        docker rm -f $existing_container
+                    fi
+                    '''
+                }
+            }
+        }
+
         stage('Run Docker Container') {
             steps {
                 script {
-                    sh "docker rm -f ${CONTAINER_NAME} || true"
                     sh "docker run -d -p ${PORT}:${PORT} --name ${CONTAINER_NAME} ${DOCKER_IMAGE}"
                 }
             }
